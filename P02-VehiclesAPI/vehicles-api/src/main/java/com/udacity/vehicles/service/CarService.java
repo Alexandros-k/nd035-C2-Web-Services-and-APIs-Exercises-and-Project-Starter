@@ -1,20 +1,19 @@
 package com.udacity.vehicles.service;
 
-import com.udacity.vehicles.client.maps.Address;
+import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.Price;
+import com.udacity.vehicles.client.prices.PriceClient;
+import com.udacity.vehicles.domain.Location;
 import com.udacity.vehicles.domain.car.Car;
 import com.udacity.vehicles.domain.car.CarRepository;
+
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 /**
  * Implements the car service create, read, update or delete
@@ -24,18 +23,20 @@ import reactor.core.publisher.Mono;
 @Service
 public class CarService {
 
-    private final WebClient webClientMaps;
-    private final WebClient webClientPricing;
+
+    private final MapsClient mapClient;
+    private final PriceClient priceClient;
     private final CarRepository repository;
+    ModelMapper mapperMap = new ModelMapper();
 
     public CarService(CarRepository repository, @Qualifier("maps") WebClient webClientMaps, @Qualifier("pricing") WebClient webClientPricing) {
         /**
          * TODO: Add the Maps and Pricing Web Clients you create
          *   in `VehiclesApiApplication` as arguments and set them here.
          */
-        this.webClientMaps =webClientMaps;
-        this.webClientPricing = webClientPricing;
 
+        this.mapClient = new MapsClient(webClientMaps, mapperMap);
+        this.priceClient = new PriceClient(webClientPricing);
         this.repository = repository;
     }
 
@@ -63,53 +64,39 @@ public class CarService {
             Car car1 = car.get();
 
 
-        /**
-         * TODO: Use the Pricing Web client you create in `VehiclesApiApplication`
-         *   to get the price based on the `id` input'
-         * TODO: Set the price of the car
-         * Note: The car class file uses @transient, meaning you will need to call
-         *   the pricing service each time to get the price.
-         */
+            /**
+             * TODO: Use the Pricing Web client you create in `VehiclesApiApplication`
+             *   to get the price based on the `id` input'
+             * TODO: Set the price of the car
+             * Note: The car class file uses @transient, meaning you will need to call
+             *   the pricing service each time to get the price.
+             */
+
+            String price = priceClient.getPrice(id);
+            car1.setPrice(price);
 
 
-            Price price = webClientPricing.get()
-               .uri("/prices/" +id)
-               .retrieve()
-               .bodyToMono(Price.class)
-               .retry(3).block();
+            /**
+             * TODO: Use the Maps Web client you create in `VehiclesApiApplication`
+             *   to get the address for the vehicle. You should access the location
+             *   from the car object and feed it to the Maps service.
+             * TODO: Set the location of the vehicle, including the address information
+             * Note: The Location class file also uses @transient for the address,
+             * meaning the Maps service needs to be called each time for the address.
+             */
 
-            car1.setPrice(price.getPrice().toString());
+            Location location = mapClient.getAddress(car1.getLocation());
+            car1.setLocation(location);
 
-
-        /**
-         * TODO: Use the Maps Web client you create in `VehiclesApiApplication`
-         *   to get the address for the vehicle. You should access the location
-         *   from the car object and feed it to the Maps service.
-         * TODO: Set the location of the vehicle, including the address information
-         * Note: The Location class file also uses @transient for the address,
-         * meaning the Maps service needs to be called each time for the address.
-         */
-
-         Address address = webClientMaps.get()
-                 .uri(uriBuilder -> uriBuilder
-                         .path("/maps/")
-                         .queryParam("lat",car1.getLocation().getLat())
-                         .queryParam("lon",car1.getLocation().getLon())
-                         .build()
-                 )
-                    .retrieve()
-                    .bodyToMono(Address.class)
-                    .retry(3).block();
-
-
-        return car1;
-        }else {
+            return car1;
+        } else {
             throw new CarNotFoundException();
         }
     }
 
     /**
      * Either creates or updates a vehicle, based on prior existence of car
+     *
      * @param car A car object, which can be either new or existing
      * @return the new/updated car is stored in the repository
      */
@@ -128,6 +115,7 @@ public class CarService {
 
     /**
      * Deletes a given car by ID
+     *
      * @param id the ID number of the car to delete
      */
     public void delete(Long id) {
@@ -135,12 +123,12 @@ public class CarService {
          * TODO: Find the car by ID from the `repository` if it exists.
          *   If it does not exist, throw a CarNotFoundException
          */
-
-
+        Car car = repository.findById(id).orElseThrow(CarNotFoundException::new);
         /**
          * TODO: Delete the car from the repository.
          */
-
+            repository.delete(car);
+        }
 
     }
-}
+
