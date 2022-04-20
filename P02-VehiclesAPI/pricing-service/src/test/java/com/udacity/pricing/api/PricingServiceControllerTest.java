@@ -1,4 +1,4 @@
-package com.udacity.pricing;
+package com.udacity.pricing.api;
 
 import com.udacity.pricing.domain.price.Price;
 import org.junit.Test;

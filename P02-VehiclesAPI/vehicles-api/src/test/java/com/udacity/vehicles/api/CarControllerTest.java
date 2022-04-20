@@ -83,12 +83,11 @@ public class CarControllerTest {
      */
     @Test
     public void createCar() throws Exception {
-        mvc.perform(
-                        post(new URI("/cars"))
-                                .content(json.write(car).getJson())
-                                .contentType(MediaType.APPLICATION_JSON_UTF8)
-                                .accept(MediaType.APPLICATION_JSON_UTF8))
-                .andExpect(status().isCreated());
+        mvc.perform(post(new URI("/cars"))
+                 .content(json.write(car).getJson())
+                 .contentType(MediaType.APPLICATION_JSON_UTF8)
+                 .accept(MediaType.APPLICATION_JSON_UTF8))
+                 .andExpect(status().isCreated());
     }
 
     /**
@@ -122,7 +121,7 @@ public class CarControllerTest {
          */
         mvc.perform(get("/cars/{id}","1")
                  .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+                 .andExpect(status().isOk());
     }
 
 
@@ -131,10 +130,9 @@ public class CarControllerTest {
         car.setCondition(Condition.NEW);
         String json = new ObjectMapper().writeValueAsString(car);
         mvc.perform(put(new URI("/cars/1"))
-                .contentType(MediaType.APPLICATION_JSON_UTF8)
-                                .content(json)
-                        )
-                .andExpect(status().isOk());
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .content(json))
+                        .andExpect(status().isOk());
 
     }
 
